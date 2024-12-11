@@ -5,7 +5,7 @@ function catalogd_prep() {
     
     git checkout -b monorepo_prep
     
-    FILES=`ls`
+    FILES=`ls -a`
     
     mkdir catalogd_root
     
@@ -13,22 +13,30 @@ function catalogd_prep() {
     do
         # Move files in the repo with exception 
         # of the api directory
-        if [ "${f}" != "api" ]
+        if [[ "${f}" = "go.sum" || "${f}" = "go.mod"  || "${f}" = "api" || "${f}" = ".git" || "${f}" = ".gitignore"  ]]
         then
+            # Do nothing to any of the above files
+            echo -e "\n";
+        else
             git mv "${f}" catalogd_root;
         fi
     done
+
+    # Rename import paths
+    grep -rl "github.com/operator-framework/catalogd/internal" . | xargs -n 1 sed -i 's|github.com/operator-framework/catalogd/internal|github.com/operator-framework/catalogd/catalogd_root/internal|g'
     
-    HIDDEN_FILES=(".goreleaser.yml" ".github" ".gitignore" ".golangci.yaml" ".dockerignore" ".bingo")
-    for ff in "${HIDDEN_FILES[@]}";
-    do
-        git mv "${ff}" "catalogd_root/_${ff}";
-    done
-    
+    grep -rl "github.com/operator-framework/catalogd/test" . | xargs -n 1 sed -i 's|github.com/operator-framework/catalogd/test|github.com/operator-framework/catalogd/catalogd_root/test|g'
+
+    git add .
+
     git commit -s -m "Monorepo prep commit"
+
+    cd -
 }
 
 function operator-controller_prep() {
+    cd ../operator-controller
+    pwd
     echo "Prepare operator-controller repo"
 }
 
