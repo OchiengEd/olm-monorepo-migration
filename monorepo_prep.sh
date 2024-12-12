@@ -1,5 +1,7 @@
 #!/bin/bash
 
+STAGING_DIR="catalogd"
+
 function catalogd_prep() {
     cd ../catalogd
     
@@ -7,25 +9,22 @@ function catalogd_prep() {
     
     FILES=`ls -a`
     
-    mkdir catalogd_root
+    mkdir "${STAGING_DIR}"
     
     for f in ${FILES}
     do
-        # Move files in the repo with exception 
-        # of the api directory
-        if [[ "${f}" = "go.sum" || "${f}" = "go.mod"  || "${f}" = "api" || "${f}" = ".git" || "${f}" = ".gitignore"  ]]
+        # Move files in the repo with exception of the api directory
+        if [[ "${f}" = "go.sum" || "${f}" = "go.mod" || "${f}" = ".git" ]]
         then
             # Do nothing to any of the above files
             echo -e "\n";
         else
-            git mv "${f}" catalogd_root;
+            git mv "${f}" "${STAGING_DIR}";
         fi
     done
 
     # Rename import paths
-    grep -rl "github.com/operator-framework/catalogd/internal" . | xargs -n 1 sed -i 's|github.com/operator-framework/catalogd/internal|github.com/operator-framework/catalogd/catalogd_root/internal|g'
-    
-    grep -rl "github.com/operator-framework/catalogd/test" . | xargs -n 1 sed -i 's|github.com/operator-framework/catalogd/test|github.com/operator-framework/catalogd/catalogd_root/test|g'
+    find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
 
     git add .
 
@@ -35,15 +34,42 @@ function catalogd_prep() {
 }
 
 function operator-controller_prep() {
-    cd ../operator-controller
-    pwd
     echo "Prepare operator-controller repo"
-}
 
-function merge_catalogd() {
-    echo "Merge catalogd_prep work into operator-controller"
+    cd ../operator-controller
+
+    git checkout origin/main -b monorepo
+
+    git remote add -f catalogd ../catalogd
+
+    git fetch catalogd
+
+    # Update catalogd API imports
+    find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
+
+    git add --all
+
+    git commit -s -m "Update catalogd API v1 imports"
+
+    git merge catalogd/monorepo_prep --no-commit --allow-unrelated-histories
+
+    git checkout --ours go.mod
+
+    git checkout --ours go.sum
+
+    git add go.mod go.sum
+
+    git commit -s -m "Merge catalogd/monorepo_prep branch into operator-controller"
+
+    # Drop catalogd imports in go.mod
+    sed -i '/catalogd/d' go.mod
+
+    go mod tidy
+
+    git add go.mod go.sum
+
+    git commit -s -m "Remove redundant catalogd import"
 }
 
 catalogd_prep
 operator-controller_prep
-merge_catalogd
