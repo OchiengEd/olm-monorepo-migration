@@ -71,5 +71,46 @@ function operator-controller_prep() {
     git commit -s -m "Remove redundant catalogd import"
 }
 
+function patch_catalogd_makefile() {
+    echo "Update catalogd Makefile"
+    cat <<EOF> makefile.patch
+--- Makefile	2024-12-12 15:30:54.148960768 -0600
++++ Makefile.2	2024-12-12 15:30:12.246138930 -0600
+@@ -3,7 +3,7 @@
+ SHELL := /usr/bin/env bash -o pipefail
+ .SHELLFLAGS := -ec
+
+-GOLANG_VERSION := \$(shell sed -En 's/^go (.*)\$\$/\1/p' "go.mod")
++GOLANG_VERSION := \$(shell sed -En 's/^go (.*)\$\$/\1/p' "../go.mod")
+
+ ifeq (\$(origin IMAGE_REPO), undefined)
+ IMAGE_REPO := quay.io/operator-framework/catalogd
+EOF
+
+    patch -p1 catalogd/Makefile < makefile.patch
+
+    if [ -f ./makefile.patch ]
+    then
+        rm -fv makefile.patch
+    fi
+
+    git add catalogd/Makefile
+
+    git commit -s -m "Update go.mod location in catalogd/Makefile"
+}
+
 catalogd_prep
 operator-controller_prep
+patch_catalogd_makefile
+
+echo "Test binaries build"
+make build-linux
+if [ $? -eq 0 ]
+then
+    cd catalogd
+    make build-linux
+fi
+
+echo "Check in generated files"
+git add --all
+git commit -s -m "Check in generated manifest files"
