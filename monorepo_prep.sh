@@ -1,16 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 STAGING_DIR="catalogd"
 
 function catalogd_prep() {
     cd ../catalogd
-    
+
     git checkout -b monorepo_prep
-    
+
     FILES=`ls -a`
-    
+
     mkdir "${STAGING_DIR}"
-    
+
     for f in ${FILES}
     do
         # Move files in the repo with exception of the api directory
