@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 
+set -e
+
 STAGING_DIR="catalogd"
 
 catalogd_prep() {
-    cd ../catalogd
+    (cd ../catalogd || return 2
 
     git checkout -b monorepo_prep
 
-    FILES=`ls -a`
+    FILES=$(ls -a)
 
-    mkdir "${STAGING_DIR}"
+    mkdir -p "${STAGING_DIR}"
 
     for f in ${FILES}
     do
@@ -26,14 +28,13 @@ catalogd_prep() {
     # Rename import paths
     find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
     git add .
-    git commit -s -m "Monorepo prep commit"
-    cd -
+    git commit -s -m "Monorepo prep commit")
 }
 
 operator-controller_prep() {
     echo "Prepare operator-controller repo"
 
-    cd ../operator-controller
+    cd ../operator-controller || return 2
     git checkout origin/main -b monorepo
     git remote add -f catalogd ../catalogd
     git fetch catalogd
