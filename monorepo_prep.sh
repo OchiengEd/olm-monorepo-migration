@@ -90,8 +90,8 @@ operator-controller_prep
 patch_catalogd_makefile
 
 echo "Test binaries build"
-make build-linux
-if [ $? -eq 0 ]
+
+if make build-linux
 then
     cd catalogd
     make build-linux
