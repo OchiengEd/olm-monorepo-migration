@@ -2,7 +2,7 @@
 
 STAGING_DIR="catalogd"
 
-function catalogd_prep() {
+catalogd_prep() {
     cd ../catalogd
 
     git checkout -b monorepo_prep
@@ -33,7 +33,7 @@ function catalogd_prep() {
     cd -
 }
 
-function operator-controller_prep() {
+operator-controller_prep() {
     echo "Prepare operator-controller repo"
 
     cd ../operator-controller
@@ -71,7 +71,7 @@ function operator-controller_prep() {
     git commit -s -m "Remove redundant catalogd import"
 }
 
-function patch_catalogd_makefile() {
+patch_catalogd_makefile() {
     echo "Update catalogd Makefile"
     cat <<EOF> makefile.patch
 --- Makefile	2024-12-12 15:30:54.148960768 -0600
