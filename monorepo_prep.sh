@@ -25,11 +25,8 @@ catalogd_prep() {
 
     # Rename import paths
     find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
-
     git add .
-
     git commit -s -m "Monorepo prep commit"
-
     cd -
 }
 
@@ -37,28 +34,18 @@ operator-controller_prep() {
     echo "Prepare operator-controller repo"
 
     cd ../operator-controller
-
     git checkout origin/main -b monorepo
-
     git remote add -f catalogd ../catalogd
-
     git fetch catalogd
 
     # Update catalogd API imports
     find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
-
     git add --all
-
     git commit -s -m "Update catalogd API v1 imports"
-
     git merge catalogd/monorepo_prep --no-commit --allow-unrelated-histories
-
     git checkout --ours go.mod
-
     git checkout --ours go.sum
-
     git add go.mod go.sum
-
     git commit -s -m "Merge catalogd/monorepo_prep branch into operator-controller"
 
     # Drop catalogd imports in go.mod
@@ -67,7 +54,6 @@ operator-controller_prep() {
     go mod tidy
 
     git add go.mod go.sum
-
     git commit -s -m "Remove redundant catalogd import"
 }
 
@@ -95,7 +81,6 @@ EOF
     fi
 
     git add catalogd/Makefile
-
     git commit -s -m "Update go.mod location in catalogd/Makefile"
 }
 
