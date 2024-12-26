@@ -85,9 +85,9 @@ EOF
     git commit -s -m "Update go.mod location in catalogd/Makefile"
 }
 
-catalogd_prep
-operator-controller_prep
-patch_catalogd_makefile
+catalogd_prep && \
+    operator-controller_prep && \
+    patch_catalogd_makefile
 
 echo "Test binaries build"
 
