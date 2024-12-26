@@ -5,6 +5,7 @@ set -e
 STAGING_DIR="catalogd"
 
 catalogd_prep() {
+    echo "Prepare CatalogD..."
     (cd ../catalogd || return 2
 
     git checkout -b monorepo_prep
@@ -60,7 +61,9 @@ operator-controller_prep() {
 
 patch_catalogd_makefile() {
     echo "Update catalogd Makefile"
-    cat <<EOF> makefile.patch
+
+    local original_makefile="catalogd/Makefile"
+    local makefile_patch_data=$(cat <<EOF
 --- Makefile	2024-12-12 15:30:54.148960768 -0600
 +++ Makefile.2	2024-12-12 15:30:12.246138930 -0600
 @@ -3,7 +3,7 @@
@@ -73,30 +76,37 @@ patch_catalogd_makefile() {
  ifeq (\$(origin IMAGE_REPO), undefined)
  IMAGE_REPO := quay.io/operator-framework/catalogd
 EOF
+          )
+    patch -p1 "${original_makefile}" <<< "${makefile_patch_data}"
 
-    patch -p1 catalogd/Makefile < makefile.patch
-
-    if [ -f ./makefile.patch ]
-    then
-        rm -fv makefile.patch
-    fi
-
-    git add catalogd/Makefile
-    git commit -s -m "Update go.mod location in catalogd/Makefile"
+    git add "${original_makefile}"
+    git commit -s -m "Update go.mod location in ${original_makefile}"
 }
 
-catalogd_prep && \
-    operator-controller_prep && \
-    patch_catalogd_makefile
 
-echo "Test binaries build"
+#------
+# "Main" function called that kicks off script
+#------
+main() {
 
-if make build-linux
-then
-    cd catalogd
-    make build-linux
-fi
+    if catalogd_prep && operator-controller_prep && patch_catalogd_makefile
+    then
+        echo "Test binaries build"
 
-echo "Check in generated files"
-git add --all
-git commit -s -m "Check in generated manifest files"
+        if make build-linux
+        then
+            cd catalogd
+            make build-linux
+        fi
+
+        echo "Check in generated files"
+        git add --all
+        git commit -s -m "Check in generated manifest files"
+        echo "Done"
+    elif
+        echo "ooops, something went wrong"
+        return 1
+    fi
+}
+
+main $@
