@@ -103,7 +103,7 @@ main() {
         git add --all
         git commit -s -m "Check in generated manifest files"
         echo "Done"
-    elif
+    else
         echo "ooops, something went wrong"
         return 1
     fi
