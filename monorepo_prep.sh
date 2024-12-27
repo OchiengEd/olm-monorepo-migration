@@ -5,6 +5,35 @@ set -u
 set -o pipefail
 
 DEBUG=${DEBUG:-0}
+VERBOSE=${VERBOSE:-0}
+
+#---
+# A bit of prerequisite command existence checking
+#---
+{
+    sed_cmd="sed"
+if grep -q -i "daRwiN" <<< $(uname) ; then
+    if type gsed >& /dev/null;
+    then
+        ((VERBOSE)) && echo "Now using gsed";
+        sed_cmd=gsed;
+    else
+        printf "\n missing required tool \033[01;33m %s \033[0m \n" "gsed"  ;
+        echo " Your mac doesn't have a suitable sed. You cannot use this script, please install gsed!!";
+        exit 1;
+    fi
+fi
+
+num_missing_tools=0
+if type find  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "find" ; (( num_missing_tools++ ));fi
+if type git   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "git"  ; (( num_missing_tools++ ));fi
+if type go    >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "go"   ; (( num_missing_tools++ ));fi
+if type patch >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "patch"; (( num_missing_tools++ ));fi
+if type ${sed_cmd} >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "${sed_cmd}"  ; (( num_missing_tools++ ));fi
+echo
+((num_missing_tools > 0)) && exit 2 || echo
+}
+#---
 
 STAGING_DIR="catalogd"
 
@@ -18,6 +47,7 @@ catalogd_prep() {
 
     #Cleanly read the output of the `ls -a` command using process substitution
     #filter the list against regex set with an affirmative conditional via the bang `!`
+    echo "    GIT Moving files to staging dir: ${STAGING_DIR}"
     while read -r file
     do
         # Move files in the repo with exception of the api directory
@@ -27,12 +57,13 @@ catalogd_prep() {
         else
             #TODO: Remove this else branch during cleanup - not needed beyond debugging
             # Do nothing to any of the above files
-            echo -e "skipping ${file}";
+            ((DEBUG)) && echo -e "skipping ${file}";
         fi
     done < <(ls -a)
 
     # Rename import paths
-    find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
+    echo "    Editing go files with new import paths..."
+    find . -name "*.go" -type f -exec ${sed_cmd} -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
     git add .
     git commit -s -m "Monorepo prep commit")
 }
@@ -46,7 +77,8 @@ operator-controller_prep() {
     git fetch catalogd
 
     # Update catalogd API imports
-    find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
+    ((VERBOSE)) && echo "    Editing go files with new import paths..."
+    find . -name "*.go" -type f -exec ${sed_cmd} -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
     git add --all
     git commit -s -m "Update catalogd API v1 imports"
     git merge catalogd/monorepo_prep --no-commit --allow-unrelated-histories
@@ -56,7 +88,8 @@ operator-controller_prep() {
     git commit -s -m "Merge catalogd/monorepo_prep branch into operator-controller"
 
     # Drop catalogd imports in go.mod
-    sed -i '/catalogd/d' go.mod
+    ((VERBOSE)) && echo "    Editing go.mod to remove catalogd from imports..."
+    ${sed_cmd} -i '/catalogd/d' go.mod
 
     go mod tidy
 
@@ -83,7 +116,7 @@ patch_catalogd_makefile() {
 EOF
           )
     patch -p1 "${original_makefile}" <<< "${makefile_patch_data}"
-
+    ((VERBOSE)) && echo "    Patched Makefile"
     git add "${original_makefile}"
     git commit -s -m "Update go.mod location in ${original_makefile}"
 }
