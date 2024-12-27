@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
 set -u
 set -o pipefail
 
@@ -25,14 +24,15 @@ if grep -q -i "daRwiN" <<< $(uname) ; then
 fi
 
 num_missing_tools=0
-if type find  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "find" ; (( num_missing_tools++ ));fi
-if type git   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "git"  ; (( num_missing_tools++ ));fi
-if type go    >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "go"   ; (( num_missing_tools++ ));fi
-if type patch >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "patch"; (( num_missing_tools++ ));fi
-if type ${sed_cmd} >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m \n" "${sed_cmd}"  ; (( num_missing_tools++ ));fi
+if type find  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "find" ; (( num_missing_tools++ ));fi
+if type git   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "git"  ; (( num_missing_tools++ ));fi
+if type go    >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "go"   ; (( num_missing_tools++ ));fi
+if type patch >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "patch"; (( num_missing_tools++ ));fi
+if type ${sed_cmd} >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "${sed_cmd}"  ; (( num_missing_tools++ ));fi
 echo
 ((num_missing_tools > 0)) && exit 2 || echo
 }
+set -e
 #---
 
 STAGING_DIR="catalogd"
