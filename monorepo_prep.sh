@@ -10,21 +10,22 @@ catalogd_prep() {
 
     git checkout -b monorepo_prep
 
-    FILES=$(ls -a)
-
     mkdir -p "${STAGING_DIR}"
 
-    for f in ${FILES}
+    #Cleanly read the output of the `ls -a` command using process substitution
+    #filter the list against regex set with an affirmative conditional via the bang `!`
+    while read -r file
     do
         # Move files in the repo with exception of the api directory
-        if [[ "${f}" = "go.sum" || "${f}" = "go.mod" || "${f}" = ".git" ]]
+        if ! [[ "${file}" =~ ^(go.sum|go.mod|.git|.|..)$ ]]
         then
-            # Do nothing to any of the above files
-            echo -e "\n";
+            git mv "${file}" "${STAGING_DIR}";
         else
-            git mv "${f}" "${STAGING_DIR}";
+            #TODO: Remove this else branch during cleanup - not needed beyond debugging
+            # Do nothing to any of the above files
+            echo -e "skipping ${file}";
         fi
-    done
+    done < <(ls -a)
 
     # Rename import paths
     find . -name "*.go" -type f -exec sed -i 's|github.com/operator-framework/catalogd|github.com/operator-framework/operator-controller/catalogd|g' {} \;
@@ -109,4 +110,4 @@ main() {
     fi
 }
 
-main $@
+main "$@"
