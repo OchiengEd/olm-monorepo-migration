@@ -177,6 +177,11 @@ usage:
   --undo         : reverses the monorepo process (please don't use if you have pushed!)
     <\"\">         : with no args will run the monorepo process
 
+  The script responds to DEBUG and VERBOSE environment variables.
+  Set these to a non zero value, usually \"1\" and run the command,
+  additional information will be included in the stdout output.
+
+
         How to run this script
 
         The script %s expects the catalogd and
@@ -198,8 +203,13 @@ usage:
 
         see: https://github.com/OchiengEd/olm-monorepo-migration
 
+Examples:
 
-" "${0##*/}" "${0##*/}" "${0##*/}"
+$ DEBUG=1 VERBOSE=1 %s
+$ %s --undo
+
+
+" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}" "${0##*/}"
     exit 0
 }
 #------
