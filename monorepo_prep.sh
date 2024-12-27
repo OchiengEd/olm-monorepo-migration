@@ -4,6 +4,8 @@ set -e
 set -u
 set -o pipefail
 
+DEBUG=${DEBUG:-0}
+
 STAGING_DIR="catalogd"
 
 catalogd_prep() {
@@ -88,27 +90,130 @@ EOF
 
 
 #------
+# Functions to undo and clean up repos (helps with dev iteration cycle speed)
+#------
+
+# "private" functions
+_undo_catalogd_prep() {
+    echo "UNDOING catalogd_prep..."
+
+    (cd ../catalogd || return 2
+    git checkout main
+    echo "branches before removal"
+    git branch -vv
+    git branch -D monorepo_prep
+    echo "branches after removal"
+    git branch -vv
+    ) && echo "undone" || echo "could not undo catalogd_prep"
+}
+
+_undo_operator-controller_prep() {
+    echo "UNDOING operator_controller_prep..."
+
+    (cd ../operator-controller || return 3
+
+    git checkout main
+
+    echo "removing monorepo branch"
+    git branch -vv
+    git branch -D monorepo
+    git branch -vv
+
+    echo "removing catalogd remote"
+    echo "remotes before removal"
+    git remote -vv
+    git remote remove catalogd
+    echo "remotes after removal"
+    git remote -vv
+    ) && echo "undone" || echo "could not undo operator-controller_prep"
+}
+
+# "public" function
+undo_monorepo() {
+    _undo_catalogd_prep
+    _undo_operator-controller_prep
+}
+
+usage() {
+    printf "
+usage:
+
+> %s [[--help | -h] | --undo]
+
+  --help | -h    : shows this message
+  --undo         : reverses the monorepo process (please don't use if you have pushed!)
+    <\"\">         : with no args will run the monorepo process
+
+        How to run this script
+
+        The script %s expects the catalogd and
+        operator-controller repositories and this repo
+        olm-monorepo-migration at the same directory level.
+
+        $ ls
+
+        catalogd  operator-controller olm-monorepo-migration
+
+        $ cd olm-monorepo-migration/
+        $ bash %s
+
+        The script creates a branch named monorepo in
+        operator-controller local repository and a branch named
+        monorepo_prep in catalogd local repository. The code branch in
+        operator-controller repo would be the pull request for the
+        monorepo work.
+
+        see: https://github.com/OchiengEd/olm-monorepo-migration
+
+
+" "${0##*/}" "${0##*/}" "${0##*/}"
+    exit 0
+}
+#------
 # "Main" function called that kicks off script
 #------
 main() {
 
-    if catalogd_prep && operator-controller_prep && patch_catalogd_makefile
-    then
-        echo "Test binaries build"
-
-        if make build-linux
+    # no args: then let's get it on...
+    if (( $# == 0 )); then
+        if catalogd_prep && operator-controller_prep && patch_catalogd_makefile
         then
-            cd catalogd
-            make build-linux
+            echo "Test binaries build"
+
+            if make build-linux
+            then
+                cd catalogd
+                make build-linux
+            fi
+
+            echo "Check in generated files"
+            git add --all
+            git commit -s -m "Check in generated manifest files"
+            echo "Done"
+            exit 0
+        else
+            echo "ooops, something went wrong"
+            exit 1
         fi
 
-        echo "Check in generated files"
-        git add --all
-        git commit -s -m "Check in generated manifest files"
-        echo "Done"
-    else
-        echo "ooops, something went wrong"
-        return 1
+    else # args: then let's handle them...
+        while (( $# > 0 )); do
+            case "$1" in
+                --help|-h)
+                    shift
+                    usage
+                    ;;
+                --undo)
+                    shift
+                    undo_monorepo
+                    exit $?
+                    ;;
+                *)
+                    echo "unknown arg $1"
+                    shift
+                    ;;
+            esac
+        done
     fi
 }
 
