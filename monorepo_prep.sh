@@ -11,26 +11,26 @@ VERBOSE=${VERBOSE:-0}
 #---
 {
     sed_cmd="sed"
-if grep -q -i "daRwiN" <<< $(uname) ; then
-    if type gsed >& /dev/null;
-    then
-        ((VERBOSE)) && echo "Now using gsed";
-        sed_cmd=gsed;
-    else
-        printf "\n missing required tool \033[01;33m %s \033[0m \n" "gsed"  ;
-        echo " Your mac doesn't have a suitable sed. You cannot use this script, please install gsed!!";
-        exit 1;
+    if grep -q -i "daRwiN" <<< $(uname) ; then
+        if type gsed >& /dev/null;
+        then
+            ((VERBOSE)) && echo "Now using gsed";
+            sed_cmd=gsed;
+        else
+            printf "\n missing required tool \033[01;33m %s \033[0m \n" "gsed"  ;
+            echo " Your mac doesn't have a suitable sed. You cannot use this script, please install gsed!!";
+            exit 1;
+        fi
     fi
-fi
 
-num_missing_tools=0
-if type find  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "find" ; (( num_missing_tools++ ));fi
-if type git   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "git"  ; (( num_missing_tools++ ));fi
-if type go    >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "go"   ; (( num_missing_tools++ ));fi
-if type patch >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "patch"; (( num_missing_tools++ ));fi
-if type ${sed_cmd} >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "${sed_cmd}"  ; (( num_missing_tools++ ));fi
-echo
-((num_missing_tools > 0)) && exit 2 || echo
+    num_missing_tools=0
+    if type find  >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "find" ; (( num_missing_tools++ ));fi
+    if type git   >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "git"  ; (( num_missing_tools++ ));fi
+    if type go    >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "go"   ; (( num_missing_tools++ ));fi
+    if type patch >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "patch"; (( num_missing_tools++ ));fi
+    if type ${sed_cmd} >& /dev/null; then echo -n "."; else printf "\n missing required tool \033[01;33m %s \033[0m " "${sed_cmd}"  ; (( num_missing_tools++ ));fi
+    echo
+    ((num_missing_tools > 0)) && exit 2 || echo
 }
 set -e
 #---
@@ -181,8 +181,7 @@ usage:
   Set these to a non zero value, usually \"1\" and run the command,
   additional information will be included in the stdout output.
 
-
-        How to run this script
+        How to run this script:
 
         The script %s expects the catalogd and
         operator-controller repositories and this repo
