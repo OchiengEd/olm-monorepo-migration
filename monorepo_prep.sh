@@ -35,12 +35,18 @@ VERBOSE=${VERBOSE:-0}
 set -e
 #---
 
+CATALOGD_REPO_TLD=${CATALOGD_REPO_TLD:-"../catalogd"}
+OPERATOR_CONTROLLER_REPO_TLD=${OPERATOR_CONTROLLER_REPO_TLD:-"../operator-controller"}
+
+echo "catlogd repo: ${CATALOGD_REPO_TLD}"
+echo "operator-controller repo : ${OPERATOR_CONTROLLER_REPO_TLD}"
+
 STAGING_DIR="catalogd"
 
 catalogd_prep() {
     echo "Prepare CatalogD..."
-    (cd ../catalogd || return 2
-
+    (cd "${CATALOGD_REPO_TLD}" || return 2
+    pwd
     git checkout -b monorepo_prep
 
     mkdir -p "${STAGING_DIR}"
@@ -71,9 +77,10 @@ catalogd_prep() {
 operator-controller_prep() {
     echo "Prepare operator-controller repo"
 
-    cd ../operator-controller || return 2
+    (cd "${OPERATOR_CONTROLLER_REPO_TLD}" || return 2
+    pwd
     git checkout origin/main -b monorepo
-    git remote add -f catalogd ../catalogd
+    git remote add -f catalogd "${CATALOGD_REPO_TLD}"
     git fetch catalogd
 
     # Update catalogd API imports
@@ -94,12 +101,14 @@ operator-controller_prep() {
     go mod tidy
 
     git add go.mod go.sum
-    git commit -s -m "Remove redundant catalogd import"
+    git commit -s -m "Remove redundant catalogd import")
 }
 
 patch_catalogd_makefile() {
     echo "Update catalogd Makefile"
 
+    (cd "${OPERATOR_CONTROLLER_REPO_TLD}" || return 2
+    pwd
     local original_makefile="catalogd/Makefile"
     local makefile_patch_data=$(cat <<EOF
 --- Makefile	2024-12-12 15:30:54.148960768 -0600
@@ -115,10 +124,12 @@ patch_catalogd_makefile() {
  IMAGE_REPO := quay.io/operator-framework/catalogd
 EOF
           )
+    echo "--->> Makefile to edit: $(readlink -f ${original_makefile})"
     patch -p1 "${original_makefile}" <<< "${makefile_patch_data}"
     ((VERBOSE)) && echo "    Patched Makefile"
     git add "${original_makefile}"
     git commit -s -m "Update go.mod location in ${original_makefile}"
+    )
 }
 
 
@@ -130,7 +141,8 @@ EOF
 _undo_catalogd_prep() {
     echo "UNDOING catalogd_prep..."
 
-    (cd ../catalogd || return 2
+    (cd "${CATALOGD_REPO_TLD}" || return 2
+    pwd
     git checkout main
     echo "branches before removal"
     git branch -vv
@@ -143,8 +155,8 @@ _undo_catalogd_prep() {
 _undo_operator-controller_prep() {
     echo "UNDOING operator_controller_prep..."
 
-    (cd ../operator-controller || return 3
-
+    (cd "${OPERATOR_CONTROLLER_REPO_TLD}" || return 3
+    pwd
     git checkout main
 
     echo "removing monorepo branch"
@@ -221,7 +233,7 @@ main() {
         if catalogd_prep && operator-controller_prep && patch_catalogd_makefile
         then
             echo "Test binaries build"
-
+            (cd "${OPERATOR_CONTROLLER_REPO_TLD}"
             if make build-linux
             then
                 cd catalogd
@@ -231,8 +243,8 @@ main() {
             echo "Check in generated files"
             git add --all
             git commit -s -m "Check in generated manifest files"
-            echo "Done"
-            exit 0
+            echo "Done")
+            exit $?
         else
             echo "ooops, something went wrong"
             exit 1
