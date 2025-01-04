@@ -38,7 +38,7 @@ set -e
 CATALOGD_REPO_TLD=${CATALOGD_REPO_TLD:-"../catalogd"}
 OPERATOR_CONTROLLER_REPO_TLD=${OPERATOR_CONTROLLER_REPO_TLD:-"../operator-controller"}
 
-echo "catlogd repo: ${CATALOGD_REPO_TLD}"
+echo "catalogd repo: ${CATALOGD_REPO_TLD}"
 echo "operator-controller repo : ${OPERATOR_CONTROLLER_REPO_TLD}"
 
 STAGING_DIR="catalogd"
